@@ -1,6 +1,6 @@
 #region Copyright notice and license
 // Protocol Buffers - Google's data interchange format
-// Copyright 2008 Google Inc.  All rights reserved.
+// Copyright 2017 Google Inc.  All rights reserved.
 // https://developers.google.com/protocol-buffers/
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,59 +30,60 @@
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endregion
 
-#if !NET35
-using System;
-#endif
-namespace Google.Protobuf
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+
+namespace Google.Protobuf.Collections
 {
-#if NET35
-    public interface IEquatable<T>
-    {
-        bool Equals(T other);
-    }
-#endif
     /// <summary>
-    /// Interface for a Protocol Buffers message, supporting
-    /// basic operations required for serialization.
+    /// Utility to compare if two Lists are the same, and the hash code
+    /// of a List.
     /// </summary>
-    public interface IMessage
+    public static class Lists
     {
         /// <summary>
-        /// Merges the data from the specified coded input stream with the current message.
+        /// Checks if two lists are equal.
         /// </summary>
-        /// <remarks>See the user guide for precise merge semantics.</remarks>
-        /// <param name="input"></param>
-        void MergeFrom(CodedInputStream input);
+        public static bool Equals<T>(List<T> left, List<T> right)
+        {
+            if (left == right)
+            {
+                return true;
+            }
+            if (left == null || right == null)
+            {
+                return false;
+            }
+            if (left.Count != right.Count)
+            {
+                return false;
+            }
+            IEqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            for (int i = 0; i < left.Count; i++)
+            {
+                if (!comparer.Equals(left[i], right[i]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
 
         /// <summary>
-        /// Writes the data to the given coded output stream.
+        /// Gets the list's hash code.
         /// </summary>
-        /// <param name="output">Coded output stream to write the data to. Must not be null.</param>
-        void WriteTo(CodedOutputStream output);
-
-        /// <summary>
-        /// Calculates the size of this message in Protocol Buffer wire format, in bytes.
-        /// </summary>
-        /// <returns>The number of bytes required to write this message
-        /// to a coded output stream.</returns>
-        int CalculateSize();
-
+        public static int GetHashCode<T>(List<T> list)
+        {
+            if (list == null)
+            {
+                return 0;
+            }
+            int hash = 31;
+            foreach (T element in list)
+            {
+                hash = hash * 29 + element.GetHashCode();
+            }
+            return hash;
+        }
     }
-    
-    /// <summary>
-    /// Generic interface for a Protocol Buffers message,
-    /// where the type parameter is expected to be the same type as
-    /// the implementation class.
-    /// </summary>
-    /// <typeparam name="T">The message type.</typeparam>
-    public interface IMessage<T> : IMessage, IEquatable<T>, IDeepCloneable<T> where T : IMessage<T>
-    {
-        /// <summary>
-        /// Merges the given message into this one.
-        /// </summary>
-        /// <remarks>See the user guide for precise merge semantics.</remarks>
-        /// <param name="message">The message to merge with this one. Must not be null.</param>
-        void MergeFrom(T message);
-    }
-
 }
